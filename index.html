@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>O Novelozinho — Catálogo</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;1,400&family=Nunito:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --brown:#6b3a20;--brown-light:#a06040;--brown-mid:#7c4a2d;--brown-pale:#f5e8de;
+  --accent:#c0522a;--accent2:#d4845a;--cream:#fff9f5;--cream2:#faf3ee;
+  --green:#2a7a50;--red:#a03030;--yellow:#8a6020;
+  --border:rgba(180,100,60,0.2);
+}
+body{font-family:'Nunito',sans-serif;background:#f7efe8;color:#3a1f0a;}
+.page{max-width:980px;margin:0 auto;padding:1.5rem 1rem 3rem;}
+
+/* COVER */
+.cover{background:linear-gradient(135deg,#fff5ee,#fde0c8);border-radius:20px;border:.5px solid var(--border);padding:2.5rem 2rem 2rem;margin-bottom:1.5rem;text-align:center;}
+.cover-emoji{font-size:60px;display:block;margin-bottom:.5rem;}
+.cover h1{font-family:'Playfair Display',serif;font-size:32px;font-weight:500;color:var(--brown);}
+.cover-tag{font-size:12px;color:var(--brown-light);letter-spacing:1.5px;text-transform:uppercase;font-style:italic;margin:6px 0 1.25rem;display:block;}
+.cover-fields{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;}
+.cf{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.75);border:.5px solid rgba(180,100,60,.25);border-radius:99px;padding:5px 14px;font-size:13px;color:var(--brown-mid);}
+
+/* TOOLBAR */
+.toolbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:10px;}
+.section-title{font-family:'Playfair Display',serif;font-size:20px;color:var(--brown);display:flex;align-items:center;gap:8px;}
+.admin-link{font-size:12px;color:var(--brown-light);text-decoration:none;opacity:.6;}
+.admin-link:hover{opacity:1;}
+
+/* FILTER */
+.filter-bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1.25rem;}
+.filter-btn{border:1.5px solid var(--border);background:transparent;border-radius:99px;padding:5px 14px;font-family:'Nunito',sans-serif;font-size:12px;font-weight:700;color:var(--brown-mid);cursor:pointer;transition:all .15s;}
+.filter-btn.active,.filter-btn:hover{background:var(--accent2);color:#fff;border-color:var(--accent2);}
+
+/* GRID */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:1.1rem;margin-bottom:1.5rem;}
+.card{background:var(--cream);border:.5px solid var(--border);border-radius:16px;overflow:hidden;display:flex;flex-direction:column;position:relative;transition:box-shadow .2s,transform .2s;}
+.card:hover{box-shadow:0 8px 24px rgba(180,100,60,.15);transform:translateY(-2px);}
+.card-img{width:100%;aspect-ratio:1;background:#f2e0d0;display:flex;align-items:center;justify-content:center;font-size:56px;overflow:hidden;flex-shrink:0;}
+.card-img img{width:100%;height:100%;object-fit:cover;}
+.badge{position:absolute;top:9px;left:9px;background:var(--accent2);color:#fff;font-size:10px;font-weight:700;padding:3px 11px;border-radius:99px;}
+.card-body{padding:.85rem;flex:1;display:flex;flex-direction:column;gap:4px;}
+.card-name{font-family:'Playfair Display',serif;font-size:16px;font-style:italic;color:#5a3020;font-weight:500;}
+.tags{display:flex;flex-wrap:wrap;gap:3px;margin:3px 0;}
+.tag{background:var(--brown-pale);color:var(--brown-mid);border-radius:99px;padding:2px 9px;font-size:11px;}
+.price-row{display:flex;align-items:center;justify-content:space-between;margin-top:5px;}
+.price{font-size:18px;font-weight:700;color:var(--accent);}
+.avail{border-radius:99px;padding:3px 10px;font-size:10px;font-weight:700;}
+.a-sim{background:#d4f0e0;color:var(--green);}
+.a-nao{background:#fde8e8;color:var(--red);}
+.a-enc{background:#fef3d4;color:var(--yellow);}
+.card-desc{font-size:12px;color:#999;line-height:1.5;margin-top:3px;}
+
+/* FOOTER */
+.footer-box{background:var(--cream2);border:.5px solid var(--border);border-radius:16px;padding:1.5rem;margin-top:1.5rem;}
+.footer-title{font-family:'Playfair Display',serif;font-size:17px;color:var(--brown);font-style:italic;margin-bottom:1rem;}
+.footer-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:1rem;}
+.fi-label{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#a07050;font-weight:700;margin-bottom:2px;}
+.fi-val{font-size:13px;color:#5a3020;}
+
+/* LOADING */
+.loading{text-align:center;padding:3rem;color:var(--brown-light);font-style:italic;}
+.empty{text-align:center;padding:3rem;color:#bbb;}
+
+/* WHATSAPP BTN */
+.wa-btn{position:fixed;bottom:1.5rem;right:1.5rem;background:#25d366;color:#fff;border:none;border-radius:50%;width:56px;height:56px;font-size:28px;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,.2);display:flex;align-items:center;justify-content:center;text-decoration:none;transition:transform .2s;}
+.wa-btn:hover{transform:scale(1.1);}
+
+@media(max-width:600px){
+  .cover h1{font-size:24px;}
+  .grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));}
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="cover">
+    <span class="cover-emoji">🧶</span>
+    <h1 id="loja-nome">O Novelozinho</h1>
+    <span class="cover-tag" id="loja-tag">Amigurumis artesanais com amor</span>
+    <div class="cover-fields">
+      <div class="cf" id="cf-tel-box" style="display:none">📞 <span id="cf-tel"></span></div>
+      <div class="cf" id="cf-insta-box" style="display:none">📷 <span id="cf-insta"></span></div>
+      <div class="cf" id="cf-cidade-box" style="display:none">📍 <span id="cf-cidade"></span></div>
+    </div>
+  </div>
+
+  <div class="toolbar">
+    <div class="section-title">❤️ Meus Amigurumis</div>
+    <a href="admin.html" class="admin-link">⚙️ Admin</a>
+  </div>
+
+  <div class="filter-bar" id="filter-bar">
+    <button class="filter-btn active" onclick="filterCards('todos', this)">Todos</button>
+    <button class="filter-btn" onclick="filterCards('sim', this)">Disponível</button>
+    <button class="filter-btn" onclick="filterCards('enc', this)">Sob encomenda</button>
+    <button class="filter-btn" onclick="filterCards('nao', this)">Esgotado</button>
+  </div>
+
+  <div class="grid" id="grid">
+    <div class="loading">Carregando catálogo... 🧶</div>
+  </div>
+
+  <div class="footer-box" id="footer-box" style="display:none">
+    <div class="footer-title">ℹ️ Informações Gerais</div>
+    <div class="footer-grid" id="footer-grid"></div>
+  </div>
+
+</div>
+
+<a class="wa-btn" id="wa-btn" href="#" target="_blank" title="Fale conosco no WhatsApp">💬</a>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getFirestore, doc, getDoc, collection, getDocs, orderBy, query } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyB4V-Scot7GRGoVtEyRRsm9cK5bYFWUEX4",
+  authDomain: "o-novelozinho.firebaseapp.com",
+  projectId: "o-novelozinho",
+  storageBucket: "o-novelozinho.firebasestorage.app",
+  messagingSenderId: "604780992737",
+  appId: "1:604780992737:web:079b529fb62ccb8c253fa0"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+let allProducts = [];
+
+function availClass(v){return v==='sim'?'a-sim':v==='nao'?'a-nao':'a-enc';}
+function availLabel(v){return v==='sim'?'Disponível':v==='nao'?'Esgotado':'Sob encomenda';}
+
+function makeCard(p){
+  const card = document.createElement('div');
+  card.className = 'card';
+  card.dataset.avail = p.avail || 'sim';
+
+  const imgDiv = document.createElement('div');
+  imgDiv.className = 'card-img';
+  if(p.imgUrl){
+    const img = document.createElement('img');
+    img.src = p.imgUrl; img.alt = p.name;
+    imgDiv.appendChild(img);
+  } else {
+    imgDiv.textContent = '🧶';
+  }
+
+  if(p.badge){
+    const badge = document.createElement('div');
+    badge.className = 'badge';
+    badge.textContent = p.badge;
+    card.appendChild(badge);
+  }
+
+  const body = document.createElement('div'); body.className='card-body';
+  const name = document.createElement('div'); name.className='card-name'; name.textContent=p.name||'';
+
+  const tags = document.createElement('div'); tags.className='tags';
+  if(p.tamanho) tags.innerHTML += `<span class="tag">📏 ${p.tamanho}</span>`;
+  if(p.peso)    tags.innerHTML += `<span class="tag">⚖️ ${p.peso}</span>`;
+  if(p.fio)     tags.innerHTML += `<span class="tag">🧵 ${p.fio}</span>`;
+
+  const pr = document.createElement('div'); pr.className='price-row';
+  const price = document.createElement('div'); price.className='price'; price.textContent=p.preco||'';
+  const avail = document.createElement('div');
+  avail.className='avail '+availClass(p.avail||'sim');
+  avail.textContent=availLabel(p.avail||'sim');
+  pr.appendChild(price); pr.appendChild(avail);
+
+  const desc = document.createElement('div'); desc.className='card-desc'; desc.textContent=p.desc||'';
+
+  body.appendChild(name); body.appendChild(tags); body.appendChild(pr); body.appendChild(desc);
+  card.appendChild(imgDiv); card.appendChild(body);
+  return card;
+}
+
+window.filterCards = function(avail, btn){
+  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  const grid = document.getElementById('grid');
+  grid.querySelectorAll('.card').forEach(c=>{
+    c.style.display = (avail==='todos' || c.dataset.avail===avail) ? '' : 'none';
+  });
+};
+
+async function loadData(){
+  try {
+    // Load loja info
+    const lojaDoc = await getDoc(doc(db,'config','loja'));
+    if(lojaDoc.exists()){
+      const d = lojaDoc.data();
+      if(d.nome) document.getElementById('loja-nome').textContent = d.nome;
+      if(d.tag)  document.getElementById('loja-tag').textContent  = d.tag;
+      if(d.tel){
+        document.getElementById('cf-tel').textContent = d.tel;
+        document.getElementById('cf-tel-box').style.display='flex';
+        document.getElementById('wa-btn').href = 'https://wa.me/55'+d.tel.replace(/\D/g,'');
+      }
+      if(d.insta){
+        document.getElementById('cf-insta').textContent = d.insta;
+        document.getElementById('cf-insta-box').style.display='flex';
+      }
+      if(d.cidade){
+        document.getElementById('cf-cidade').textContent = d.cidade;
+        document.getElementById('cf-cidade-box').style.display='flex';
+      }
+    }
+
+    // Load footer
+    const footerDoc = await getDoc(doc(db,'config','footer'));
+    if(footerDoc.exists() && footerDoc.data().items){
+      const items = footerDoc.data().items;
+      const fg = document.getElementById('footer-grid');
+      fg.innerHTML = '';
+      items.forEach(item=>{
+        const fi = document.createElement('div');
+        fi.innerHTML = `<div class="fi-label">${item.label}</div><div class="fi-val">${item.val}</div>`;
+        fg.appendChild(fi);
+      });
+      document.getElementById('footer-box').style.display='block';
+    }
+
+    // Load products
+    const q = query(collection(db,'products'), orderBy('order','asc'));
+    const snap = await getDocs(q);
+    const grid = document.getElementById('grid');
+    grid.innerHTML = '';
+
+    if(snap.empty){
+      grid.innerHTML = '<div class="empty">Nenhum produto ainda. 🧶</div>';
+      return;
+    }
+
+    snap.forEach(d=>{
+      const p = {id:d.id, ...d.data()};
+      allProducts.push(p);
+      grid.appendChild(makeCard(p));
+    });
+
+  } catch(e){
+    console.error(e);
+    document.getElementById('grid').innerHTML = '<div class="empty">Erro ao carregar. Tente novamente.</div>';
+  }
+}
+
+loadData();
+</script>
+</body>
+</html>
