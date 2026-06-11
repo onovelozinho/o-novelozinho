@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin — O Novelozinho</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --brown:#6b3a20;--brown-mid:#7c4a2d;--brown-pale:#f5e8de;
+  --accent:#c0522a;--accent2:#d4845a;--cream:#fff9f5;
+  --green:#2a7a50;--red:#a03030;--yellow:#8a6020;
+  --border:rgba(180,100,60,0.2);
+}
+body{font-family:'Nunito',sans-serif;background:#f7efe8;color:#3a1f0a;}
+
+/* LOGIN */
+#login-screen{position:fixed;inset:0;background:#f7efe8;display:flex;align-items:center;justify-content:center;z-index:999;}
+.login-box{background:#fff9f5;border:.5px solid var(--border);border-radius:20px;padding:2.5rem;width:320px;text-align:center;box-shadow:0 4px 24px rgba(180,100,60,.1);}
+.login-box h2{font-family:'Playfair Display',serif;color:var(--brown);margin-bottom:.5rem;}
+.login-box p{font-size:13px;color:#999;margin-bottom:1.5rem;}
+.login-box input{width:100%;border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-family:'Nunito',sans-serif;font-size:14px;margin-bottom:.75rem;outline:none;}
+.login-box input:focus{border-color:var(--accent2);}
+.login-btn{width:100%;background:var(--accent);color:#fff;border:none;border-radius:8px;padding:11px;font-family:'Nunito',sans-serif;font-size:14px;font-weight:700;cursor:pointer;}
+.login-btn:hover{background:#a04020;}
+.login-error{color:var(--red);font-size:12px;margin-top:.5rem;display:none;}
+
+/* LAYOUT */
+.page{max-width:1100px;margin:0 auto;padding:1.5rem 1rem 3rem;}
+.header{background:linear-gradient(135deg,#fff5ee,#fde0c8);border-radius:16px;border:.5px solid var(--border);padding:1.25rem 1.5rem;margin-bottom:1.5rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;}
+.header h1{font-family:'Playfair Display',serif;font-size:22px;color:var(--brown);}
+.btn-group{display:flex;gap:8px;flex-wrap:wrap;}
+.btn{border:none;border-radius:8px;padding:8px 16px;font-family:'Nunito',sans-serif;font-size:13px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:5px;transition:opacity .15s;}
+.btn-primary{background:var(--accent);color:#fff;}
+.btn-secondary{background:var(--brown-pale);color:var(--brown-mid);border:.5px solid var(--border);}
+.btn-green{background:#3a7d50;color:#fff;}
+.btn-red{background:var(--red);color:#fff;}
+.btn-sm{padding:5px 10px;font-size:11px;}
+
+/* TABS */
+.tabs{display:flex;gap:4px;margin-bottom:1.25rem;}
+.tab{border:none;background:transparent;border-radius:8px;padding:8px 18px;font-family:'Nunito',sans-serif;font-size:13px;font-weight:700;cursor:pointer;color:#999;transition:all .15s;}
+.tab.active{background:var(--accent2);color:#fff;}
+
+/* PRODUCTS TAB */
+.prod-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:1rem;margin-bottom:1.5rem;}
+.prod-card{background:var(--cream);border:.5px solid var(--border);border-radius:14px;overflow:hidden;position:relative;}
+.prod-img{width:100%;aspect-ratio:1;background:#f2e0d0;display:flex;align-items:center;justify-content:center;font-size:48px;overflow:hidden;cursor:pointer;position:relative;}
+.prod-img img{width:100%;height:100%;object-fit:cover;position:absolute;inset:0;}
+.prod-img-overlay{position:absolute;inset:0;background:rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:700;opacity:0;transition:opacity .2s;}
+.prod-img:hover .prod-img-overlay{opacity:1;}
+.prod-body{padding:.75rem;}
+.prod-body input,.prod-body textarea,.prod-body select{width:100%;border:.5px solid var(--border);border-radius:6px;padding:5px 8px;font-family:'Nunito',sans-serif;font-size:12px;outline:none;margin-bottom:4px;background:#fff;}
+.prod-body input:focus,.prod-body textarea:focus{border-color:var(--accent2);}
+.prod-body label{font-size:10px;color:#999;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:1px;}
+.prod-actions{display:flex;gap:4px;margin-top:6px;}
+.badge-input{background:var(--brown-pale)!important;}
+.avail-sel{cursor:pointer;}
+.add-card{border:1.5px dashed rgba(180,100,60,.35);background:transparent;border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;cursor:pointer;color:#b08060;font-family:'Nunito',sans-serif;font-size:13px;min-height:200px;transition:background .2s;}
+.add-card:hover{background:#f9ede5;}
+
+/* SETTINGS TAB */
+.settings-box{background:var(--cream);border:.5px solid var(--border);border-radius:14px;padding:1.25rem;margin-bottom:1rem;}
+.settings-box h3{font-family:'Playfair Display',serif;color:var(--brown);font-size:16px;margin-bottom:1rem;}
+.field{margin-bottom:.75rem;}
+.field label{font-size:11px;color:#999;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:3px;}
+.field input{width:100%;border:.5px solid var(--border);border-radius:6px;padding:8px 10px;font-family:'Nunito',sans-serif;font-size:13px;outline:none;}
+.field input:focus{border-color:var(--accent2);}
+.footer-items{display:flex;flex-direction:column;gap:.5rem;}
+.footer-item{display:flex;gap:8px;align-items:center;}
+.footer-item input{flex:1;border:.5px solid var(--border);border-radius:6px;padding:6px 8px;font-family:'Nunito',sans-serif;font-size:12px;outline:none;}
+
+/* STATUS */
+.save-status{font-size:12px;color:#888;font-style:italic;}
+.save-status.ok{color:var(--green);}
+.save-status.err{color:var(--red);}
+
+/* UPLOAD PROGRESS */
+.upload-progress{height:3px;background:var(--accent2);border-radius:99px;transition:width .3s;width:0;}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-box">
+    <div style="font-size:48px;margin-bottom:.75rem;">🧶</div>
+    <h2>O Novelozinho</h2>
+    <p>Painel de administração</p>
+    <input type="email" id="login-email" placeholder="Seu e-mail" />
+    <input type="password" id="login-pass" placeholder="Senha" />
+    <button class="login-btn" onclick="doLogin()">Entrar</button>
+    <div class="login-error" id="login-error">E-mail ou senha incorretos.</div>
+  </div>
+</div>
+
+<!-- ADMIN -->
+<div class="page" id="admin-page" style="display:none">
+  <div class="header">
+    <h1>🧶 Painel — O Novelozinho</h1>
+    <div class="btn-group">
+      <span class="save-status" id="save-status">✓ Tudo salvo</span>
+      <a href="index.html" class="btn btn-secondary" target="_blank">👁 Ver site</a>
+      <button class="btn btn-red btn-sm" onclick="doLogout()">Sair</button>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="showTab('produtos',this)">🧸 Produtos</button>
+    <button class="tab" onclick="showTab('config',this)">⚙️ Configurações</button>
+  </div>
+
+  <!-- PRODUTOS -->
+  <div id="tab-produtos">
+    <div class="prod-grid" id="prod-grid">
+      <button class="add-card" onclick="addProduct()">
+        <span style="font-size:32px;">＋</span>
+        Adicionar produto
+      </button>
+    </div>
+  </div>
+
+  <!-- CONFIG -->
+  <div id="tab-config" style="display:none">
+    <div class="settings-box">
+      <h3>Informações da loja</h3>
+      <div class="field"><label>Nome da loja</label><input id="s-nome" placeholder="O Novelozinho"/></div>
+      <div class="field"><label>Tagline</label><input id="s-tag" placeholder="Amigurumis artesanais com amor"/></div>
+      <div class="field"><label>Telefone / WhatsApp</label><input id="s-tel" placeholder="(11) 99999-9999"/></div>
+      <div class="field"><label>Instagram</label><input id="s-insta" placeholder="@onovelozinho"/></div>
+      <div class="field"><label>Cidade</label><input id="s-cidade" placeholder="Rio de Janeiro - RJ"/></div>
+      <button class="btn btn-green" onclick="saveConfig()">💾 Salvar configurações</button>
+    </div>
+
+    <div class="settings-box">
+      <h3>Informações do rodapé</h3>
+      <div class="footer-items" id="footer-items"></div>
+      <div style="display:flex;gap:8px;margin-top:.75rem;">
+        <button class="btn btn-secondary btn-sm" onclick="addFooterItem()">+ Item</button>
+        <button class="btn btn-green btn-sm" onclick="saveFooter()">💾 Salvar rodapé</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getFirestore, doc, getDoc, setDoc, collection, getDocs, addDoc, updateDoc, deleteDoc, orderBy, query } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getStorage, ref, uploadBytesResumable, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyB4V-Scot7GRGoVtEyRRsm9cK5bYFWUEX4",
+  authDomain: "o-novelozinho.firebaseapp.com",
+  projectId: "o-novelozinho",
+  storageBucket: "o-novelozinho.firebasestorage.app",
+  messagingSenderId: "604780992737",
+  appId: "1:604780992737:web:079b529fb62ccb8c253fa0"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const storage = getStorage(app);
+const auth = getAuth(app);
+
+// ── AUTH ──
+onAuthStateChanged(auth, user=>{
+  if(user){
+    document.getElementById('login-screen').style.display='none';
+    document.getElementById('admin-page').style.display='block';
+    loadAll();
+  } else {
+    document.getElementById('login-screen').style.display='flex';
+    document.getElementById('admin-page').style.display='none';
+  }
+});
+
+window.doLogin = async function(){
+  const email = document.getElementById('login-email').value;
+  const pass  = document.getElementById('login-pass').value;
+  const errEl = document.getElementById('login-error');
+  errEl.style.display='none';
+  try {
+    await signInWithEmailAndPassword(auth, email, pass);
+  } catch(e){
+    errEl.style.display='block';
+  }
+};
+
+window.doLogout = ()=> signOut(auth);
+
+// ── TABS ──
+window.showTab = function(tab, btn){
+  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('tab-produtos').style.display = tab==='produtos'?'':'none';
+  document.getElementById('tab-config').style.display   = tab==='config'?'':'none';
+};
+
+// ── STATUS ──
+function setStatus(type,msg){
+  const el=document.getElementById('save-status');
+  el.className='save-status '+(type==='ok'?'ok':type==='err'?'err':'');
+  el.textContent=msg;
+}
+
+// ── LOAD ALL ──
+async function loadAll(){
+  await loadProducts();
+  await loadConfig();
+  await loadFooter();
+}
+
+// ── PRODUCTS ──
+let products = [];
+
+async function loadProducts(){
+  const q = query(collection(db,'products'), orderBy('order','asc'));
+  const snap = await getDocs(q);
+  products = [];
+  snap.forEach(d=>products.push({id:d.id,...d.data()}));
+  renderProducts();
+}
+
+function renderProducts(){
+  const grid = document.getElementById('prod-grid');
+  const addBtn = grid.querySelector('.add-card');
+  grid.querySelectorAll('.prod-card').forEach(c=>c.remove());
+  products.forEach((p,i)=>{
+    if(addBtn) grid.insertBefore(makeAdminCard(p,i), addBtn);
+    else grid.appendChild(makeAdminCard(p,i));
+  });
+}
+
+function makeAdminCard(p, idx){
+  const card = document.createElement('div');
+  card.className='prod-card'; card.dataset.id=p.id;
+
+  // Image
+  const imgDiv = document.createElement('div'); imgDiv.className='prod-img';
+  const emojiSpan = document.createElement('span'); emojiSpan.textContent='🧶';
+  imgDiv.appendChild(emojiSpan);
+  if(p.imgUrl){ const img=document.createElement('img'); img.src=p.imgUrl; imgDiv.appendChild(img); emojiSpan.style.display='none'; }
+  const ov = document.createElement('div'); ov.className='prod-img-overlay'; ov.textContent='📷 Trocar foto'; imgDiv.appendChild(ov);
+  const fi = document.createElement('input'); fi.type='file'; fi.accept='image/*'; fi.style.display='none';
+  fi.onchange=ev=>uploadImage(ev.target.files[0], p.id, imgDiv, emojiSpan);
+  imgDiv.appendChild(fi); imgDiv.onclick=()=>fi.click();
+
+  // Progress bar
+  const prog = document.createElement('div'); prog.className='upload-progress'; prog.id='prog-'+p.id;
+  card.appendChild(imgDiv); card.appendChild(prog);
+
+  // Body
+  const body = document.createElement('div'); body.className='prod-body';
+
+  function field(lbl, val, key, placeholder, type='input'){
+    const l=document.createElement('label'); l.textContent=lbl;
+    let el;
+    if(type==='textarea'){
+      el=document.createElement('textarea'); el.rows=2;
+    } else if(type==='select'){
+      el=document.createElement('select'); el.className='avail-sel';
+      [['sim','Disponível'],['enc','Sob encomenda'],['nao','Esgotado']].forEach(([v,lb])=>{
+        const o=document.createElement('option'); o.value=v; o.textContent=lb;
+        if(v===val) o.selected=true; el.appendChild(o);
+      });
+    } else { el=document.createElement('input'); }
+    if(type!=='select'){ el.value=val||''; el.placeholder=placeholder||''; }
+    el.oninput=()=>{ p[key]=el.value; };
+    body.appendChild(l); body.appendChild(el);
+  }
+
+  field('Nome', p.name, 'name', 'Nome do produto');
+  field('Preço', p.preco, 'preco', 'R$ 00,00');
+  field('Tamanho', p.tamanho, 'tamanho', '15 cm');
+  field('Peso', p.peso, 'peso', '~80g');
+  field('Tipo de fio', p.fio, 'fio', '100% algodão');
+  field('Badge', p.badge, 'badge', 'Mais vendido');
+  field('Disponibilidade', p.avail||'sim', 'avail', '', 'select');
+  field('Descrição', p.desc, 'desc', 'Descrição do produto...', 'textarea');
+
+  const actions = document.createElement('div'); actions.className='prod-actions';
+  const saveBtn = document.createElement('button');
+  saveBtn.className='btn btn-green btn-sm'; saveBtn.textContent='💾 Salvar';
+  saveBtn.onclick=()=>saveProduct(p);
+
+  const delBtn = document.createElement('button');
+  delBtn.className='btn btn-red btn-sm'; delBtn.textContent='🗑 Remover';
+  delBtn.onclick=()=>deleteProduct(p.id);
+
+  const upBtn = document.createElement('button');
+  upBtn.className='btn btn-secondary btn-sm'; upBtn.textContent='↑';
+  upBtn.onclick=()=>moveProduct(p.id, -1);
+
+  const dnBtn = document.createElement('button');
+  dnBtn.className='btn btn-secondary btn-sm'; dnBtn.textContent='↓';
+  dnBtn.onclick=()=>moveProduct(p.id, 1);
+
+  actions.appendChild(upBtn); actions.appendChild(dnBtn);
+  actions.appendChild(saveBtn); actions.appendChild(delBtn);
+  body.appendChild(actions);
+  card.appendChild(body);
+  return card;
+}
+
+async function uploadImage(file, productId, imgDiv, emojiSpan){
+  if(!file) return;
+  const progEl = document.getElementById('prog-'+productId);
+  const storageRef = ref(storage, `products/${productId}/${file.name}`);
+  const task = uploadBytesResumable(storageRef, file);
+  task.on('state_changed',
+    snap=>{ if(progEl) progEl.style.width=(snap.bytesTransferred/snap.totalBytes*100)+'%'; },
+    err=>{ setStatus('err','Erro no upload: '+err.message); },
+    async ()=>{
+      const url = await getDownloadURL(task.snapshot.ref);
+      await updateDoc(doc(db,'products',productId),{imgUrl:url});
+      let img = imgDiv.querySelector('img');
+      if(!img){ img=document.createElement('img'); imgDiv.appendChild(img); }
+      img.src=url; emojiSpan.style.display='none';
+      if(progEl) progEl.style.width='0';
+      const p = products.find(x=>x.id===productId);
+      if(p) p.imgUrl=url;
+      setStatus('ok','✓ Foto salva!');
+    }
+  );
+}
+
+async function saveProduct(p){
+  setStatus('','Salvando...');
+  try {
+    const data = {
+      name:p.name||'', preco:p.preco||'', tamanho:p.tamanho||'',
+      peso:p.peso||'', fio:p.fio||'', badge:p.badge||'',
+      avail:p.avail||'sim', desc:p.desc||'',
+      order:p.order||0, imgUrl:p.imgUrl||''
+    };
+    await setDoc(doc(db,'products',p.id), data, {merge:true});
+    setStatus('ok','✓ Salvo!');
+    setTimeout(()=>setStatus('','✓ Tudo salvo'),2000);
+  } catch(e){ setStatus('err','Erro: '+e.message); }
+}
+
+window.addProduct = async function(){
+  setStatus('','Criando produto...');
+  try {
+    const order = products.length;
+    const ref2 = await addDoc(collection(db,'products'),{
+      name:'Novo amigurumi', preco:'R$ --,--', tamanho:'-- cm',
+      peso:'--g', fio:'--', badge:'', avail:'sim', desc:'', order, imgUrl:''
+    });
+    products.push({id:ref2.id, name:'Novo amigurumi', preco:'R$ --,--',
+      tamanho:'-- cm', peso:'--g', fio:'--', badge:'', avail:'sim', desc:'', order, imgUrl:''});
+    renderProducts();
+    setStatus('ok','✓ Produto criado!');
+  } catch(e){ setStatus('err','Erro: '+e.message); }
+};
+
+async function deleteProduct(id){
+  if(!confirm('Remover este produto?')) return;
+  await deleteDoc(doc(db,'products',id));
+  products = products.filter(p=>p.id!==id);
+  renderProducts();
+  setStatus('ok','✓ Removido!');
+}
+
+async function moveProduct(id, dir){
+  const idx = products.findIndex(p=>p.id===id);
+  const newIdx = idx+dir;
+  if(newIdx<0||newIdx>=products.length) return;
+  [products[idx], products[newIdx]] = [products[newIdx], products[idx]];
+  for(let i=0;i<products.length;i++){
+    products[i].order=i;
+    await updateDoc(doc(db,'products',products[i].id),{order:i});
+  }
+  renderProducts();
+}
+
+// ── CONFIG ──
+async function loadConfig(){
+  const d = await getDoc(doc(db,'config','loja'));
+  if(d.exists()){
+    const c=d.data();
+    document.getElementById('s-nome').value=c.nome||'';
+    document.getElementById('s-tag').value=c.tag||'';
+    document.getElementById('s-tel').value=c.tel||'';
+    document.getElementById('s-insta').value=c.insta||'';
+    document.getElementById('s-cidade').value=c.cidade||'';
+  }
+}
+
+window.saveConfig = async function(){
+  setStatus('','Salvando...');
+  try {
+    await setDoc(doc(db,'config','loja'),{
+      nome:document.getElementById('s-nome').value,
+      tag:document.getElementById('s-tag').value,
+      tel:document.getElementById('s-tel').value,
+      insta:document.getElementById('s-insta').value,
+      cidade:document.getElementById('s-cidade').value,
+    });
+    setStatus('ok','✓ Configurações salvas!');
+  } catch(e){ setStatus('err','Erro: '+e.message); }
+};
+
+// ── FOOTER ──
+let footerItems = [
+  {label:'Prazo de entrega',val:'7 a 14 dias úteis'},
+  {label:'Frete',val:'Correios / Motoboy'},
+  {label:'Pagamento',val:'Pix • Cartão • Dinheiro'},
+  {label:'Personalização',val:'Consulte cores e tamanhos'},
+  {label:'Embalagem',val:'Caixa especial para presente'},
+  {label:'Encomendas via',val:'WhatsApp ou Instagram'},
+];
+
+async function loadFooter(){
+  const d = await getDoc(doc(db,'config','footer'));
+  if(d.exists()&&d.data().items) footerItems=d.data().items;
+  renderFooter();
+}
+
+function renderFooter(){
+  const container = document.getElementById('footer-items');
+  container.innerHTML='';
+  footerItems.forEach((item,i)=>{
+    const row=document.createElement('div'); row.className='footer-item';
+    const l=document.createElement('input'); l.value=item.label; l.placeholder='Label';
+    l.oninput=()=>footerItems[i].label=l.value;
+    const v=document.createElement('input'); v.value=item.val; v.placeholder='Valor';
+    v.oninput=()=>footerItems[i].val=v.value;
+    const del=document.createElement('button'); del.className='btn btn-red btn-sm'; del.textContent='✕';
+    del.onclick=()=>{ footerItems.splice(i,1); renderFooter(); };
+    row.appendChild(l); row.appendChild(v); row.appendChild(del);
+    container.appendChild(row);
+  });
+}
+
+window.addFooterItem=function(){ footerItems.push({label:'',val:''}); renderFooter(); };
+window.saveFooter=async function(){
+  setStatus('','Salvando...');
+  try {
+    await setDoc(doc(db,'config','footer'),{items:footerItems});
+    setStatus('ok','✓ Rodapé salvo!');
+  } catch(e){ setStatus('err','Erro: '+e.message); }
+};
+</script>
+</body>
+</html>
