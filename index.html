@@ -142,9 +142,11 @@ function makeCard(p){
 
   const imgDiv = document.createElement('div');
   imgDiv.className = 'card-img';
-  if(p.imgUrl){
+  if(p.imgData||p.imgUrl){
     const img = document.createElement('img');
-    img.src = p.imgUrl; img.alt = p.name;
+    img.src = p.imgData||p.imgUrl; img.alt = p.name;
+    const px = p.imgPosX||50, py = p.imgPosY||50, sc = p.imgScale||100;
+    img.style.cssText=`position:absolute;object-fit:cover;object-position:${px}% ${py}%;width:${sc}%;height:${sc}%;top:${(100-sc)/2}%;left:${(100-sc)/2}%`;
     imgDiv.appendChild(img);
   } else {
     imgDiv.textContent = '🧶';
