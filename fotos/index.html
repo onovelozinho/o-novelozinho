@@ -39,8 +39,8 @@ body{font-family:'Nunito',sans-serif;background:#f7efe8;color:#3a1f0a;}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:1.1rem;margin-bottom:1.5rem;}
 .card{background:var(--cream);border:.5px solid var(--border);border-radius:16px;overflow:hidden;display:flex;flex-direction:column;position:relative;transition:box-shadow .2s,transform .2s;}
 .card:hover{box-shadow:0 8px 24px rgba(180,100,60,.15);transform:translateY(-2px);}
-.card-img{width:100%;aspect-ratio:1;background:#f2e0d0;display:flex;align-items:center;justify-content:center;font-size:56px;overflow:hidden;flex-shrink:0;}
-.card-img img{width:100%;height:100%;object-fit:cover;}
+.card-img{width:100%;aspect-ratio:1;background:#f2e0d0;display:flex;align-items:center;justify-content:center;font-size:56px;overflow:hidden;flex-shrink:0;position:relative;}
+.card-img img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;}
 .badge{position:absolute;top:9px;left:9px;background:var(--accent2);color:#fff;font-size:10px;font-weight:700;padding:3px 11px;border-radius:99px;}
 .card-body{padding:.85rem;flex:1;display:flex;flex-direction:column;gap:4px;}
 .card-name{font-family:'Playfair Display',serif;font-size:16px;font-style:italic;color:#5a3020;font-weight:500;}
@@ -144,9 +144,11 @@ function makeCard(p){
   imgDiv.className = 'card-img';
   if(p.imgData||p.imgUrl){
     const img = document.createElement('img');
-    img.src = p.imgData||p.imgUrl; img.alt = p.name;
+    img.src = p.imgData||p.imgUrl; img.alt = p.name||'';
     const px = p.imgPosX||50, py = p.imgPosY||50, sc = p.imgScale||100;
-    img.style.cssText=`position:absolute;object-fit:cover;object-position:${px}% ${py}%;width:${sc}%;height:${sc}%;top:${(100-sc)/2}%;left:${(100-sc)/2}%`;
+    img.style.objectPosition = px+'% '+py+'%';
+    img.style.transform = `scale(${sc/100})`;
+    img.style.transformOrigin = px+'% '+py+'%';
     imgDiv.appendChild(img);
   } else {
     imgDiv.textContent = '🧶';
