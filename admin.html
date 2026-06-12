@@ -33,9 +33,17 @@ body{font-family:'Nunito',sans-serif;background:#f7efe8;color:#3a1f0a;}
 .prod-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:1rem;margin-bottom:1.5rem;}
 .prod-card{background:var(--cream);border:.5px solid var(--border);border-radius:14px;overflow:hidden;}
 .prod-img{width:100%;aspect-ratio:1;background:#f2e0d0;display:flex;align-items:center;justify-content:center;font-size:48px;cursor:pointer;position:relative;overflow:hidden;}
-.prod-img img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;}
-.prod-img-overlay{position:absolute;inset:0;background:rgba(0,0,0,.45);display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:700;opacity:0;transition:opacity .2s;gap:4px;}
+.prod-img img{position:absolute;width:100%;height:100%;object-fit:cover;top:0;left:0;cursor:grab;user-select:none;}
+.prod-img img.dragging{cursor:grabbing;}
+.prod-img-overlay{position:absolute;inset:0;background:rgba(0,0,0,.45);display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:700;opacity:0;transition:opacity .2s;gap:4px;pointer-events:none;}
 .prod-img:hover .prod-img-overlay{opacity:1;}
+.prod-img.adjusting .prod-img-overlay{display:none;}
+.adjust-bar{display:none;position:absolute;bottom:0;left:0;right:0;background:rgba(40,15,5,.8);padding:5px 8px;z-index:10;align-items:center;gap:6px;}
+.prod-img.adjusting .adjust-bar{display:flex;}
+.adjust-bar button{border:none;background:rgba(255,255,255,.2);color:#fff;border-radius:6px;padding:3px 10px;font-size:10px;font-family:'Nunito',sans-serif;font-weight:700;cursor:pointer;white-space:nowrap;}
+.adjust-bar button:hover{background:rgba(255,255,255,.35);}
+.adjust-bar span{color:rgba(255,255,255,.8);font-size:10px;font-family:'Nunito',sans-serif;white-space:nowrap;}
+.adjust-bar input[type=range]{flex:1;accent-color:var(--accent2);}
 .uploading-bar{height:4px;background:var(--accent2);width:0;transition:width .3s;border-radius:0;}
 .prod-body{padding:.75rem;}
 .prod-body input,.prod-body textarea,.prod-body select{width:100%;border:.5px solid var(--border);border-radius:6px;padding:5px 8px;font-family:'Nunito',sans-serif;font-size:12px;outline:none;margin-bottom:4px;background:#fff;}
@@ -222,12 +230,46 @@ function makeCard(p){
   // Image
   const imgDiv = document.createElement('div'); imgDiv.className='prod-img';
   const emoji = document.createElement('span'); emoji.textContent='🧶'; imgDiv.appendChild(emoji);
-  if(p.imgData){ const img=document.createElement('img'); img.src=p.imgData; imgDiv.appendChild(img); emoji.style.display='none'; }
-  const ov = document.createElement('div'); ov.className='prod-img-overlay';
-  ov.innerHTML='📷 Clique para adicionar foto<span>clique novamente para trocar</span>'; imgDiv.appendChild(ov);
 
-  // Upload bar
-  const bar = document.createElement('div'); bar.className='uploading-bar'; bar.id='bar-'+p.id;
+  // Adjust bar
+  const adjBar = document.createElement('div'); adjBar.className='adjust-bar';
+  const adjLabel = document.createElement('span'); adjLabel.textContent='🔍 Zoom';
+  const adjRange = document.createElement('input'); adjRange.type='range'; adjRange.min=100; adjRange.max=250; adjRange.value=p.imgScale||100; adjRange.step=5;
+  const adjDone = document.createElement('button'); adjDone.textContent='✓ Concluir';
+  adjBar.appendChild(adjLabel); adjBar.appendChild(adjRange); adjBar.appendChild(adjDone);
+  imgDiv.appendChild(adjBar);
+
+  let imgEl = null;
+  let posX = p.imgPosX||50, posY = p.imgPosY||50, scale = p.imgScale||100;
+
+  function applyPos(){ if(!imgEl) return; imgEl.style.objectPosition=posX+'% '+posY+'%'; imgEl.style.width=scale+'%'; imgEl.style.height=scale+'%'; imgEl.style.top=((100-scale)/2)+'%'; imgEl.style.left=((100-scale)/2)+'%'; }
+
+  function setupDrag(img){
+    let dragging=false,sx,sy,spx,spy;
+    img.addEventListener('mousedown',ev=>{ if(!imgDiv.classList.contains('adjusting')) return; dragging=true; img.classList.add('dragging'); sx=ev.clientX; sy=ev.clientY; spx=posX; spy=posY; ev.preventDefault(); });
+    window.addEventListener('mousemove',ev=>{ if(!dragging) return; const rect=imgDiv.getBoundingClientRect(); const dx=((ev.clientX-sx)/rect.width)*100*(100/scale); const dy=((ev.clientY-sy)/rect.height)*100*(100/scale); posX=Math.min(100,Math.max(0,spx-dx)); posY=Math.min(100,Math.max(0,spy-dy)); applyPos(); });
+    window.addEventListener('mouseup',()=>{ if(dragging){dragging=false; imgEl&&imgEl.classList.remove('dragging');} });
+    img.addEventListener('touchstart',ev=>{ if(!imgDiv.classList.contains('adjusting')) return; const t=ev.touches[0]; dragging=true; sx=t.clientX; sy=t.clientY; spx=posX; spy=posY; ev.preventDefault(); },{passive:false});
+    img.addEventListener('touchmove',ev=>{ if(!dragging) return; const t=ev.touches[0]; const rect=imgDiv.getBoundingClientRect(); const dx=((t.clientX-sx)/rect.width)*100*(100/scale); const dy=((t.clientY-sy)/rect.height)*100*(100/scale); posX=Math.min(100,Math.max(0,spx-dx)); posY=Math.min(100,Math.max(0,spy-dy)); applyPos(); ev.preventDefault(); },{passive:false});
+    img.addEventListener('touchend',()=>{dragging=false;});
+  }
+
+  adjDone.onclick=ev=>{ ev.stopPropagation(); imgDiv.classList.remove('adjusting'); savePosition(); };
+  adjRange.oninput=()=>{ scale=parseInt(adjRange.value); applyPos(); };
+
+  async function savePosition(){
+    if(!p.id) return;
+    try { await updateDoc(doc(db,'products',p.id),{imgPosX:posX,imgPosY:posY,imgScale:scale}); p.imgPosX=posX; p.imgPosY=posY; p.imgScale=scale; setStatus('ok','✓ Posição salva!'); setTimeout(()=>setStatus('ok','✓ Tudo salvo'),2000); } catch(e){}
+  }
+
+  if(p.imgData){
+    imgEl=document.createElement('img'); imgEl.src=p.imgData; imgEl.alt='foto';
+    imgDiv.appendChild(imgEl); applyPos(); setupDrag(imgEl); emoji.style.display='none';
+  }
+
+  const ov = document.createElement('div'); ov.className='prod-img-overlay';
+  ov.innerHTML='📷 Clique para foto<br><small style="font-weight:400;opacity:.8">após adicionar, clique para ajustar</small>';
+  imgDiv.appendChild(ov);
 
   const fi = document.createElement('input'); fi.type='file'; fi.accept='image/*'; fi.style.display='none';
   fi.onchange=ev=>{
@@ -236,21 +278,23 @@ function makeCard(p){
     compressImage(f, async base64=>{
       bar.style.width='80%';
       try {
-        await updateDoc(doc(db,'products',p.id),{imgData: base64});
-        let img = imgDiv.querySelector('img');
-        if(!img){ img=document.createElement('img'); imgDiv.appendChild(img); }
-        img.src = base64;
-        emoji.style.display='none';
-        p.imgData = base64;
+        posX=50; posY=50; scale=100; adjRange.value=100;
+        await updateDoc(doc(db,'products',p.id),{imgData:base64, imgPosX:50, imgPosY:50, imgScale:100});
+        if(!imgEl){ imgEl=document.createElement('img'); imgEl.alt='foto'; imgDiv.insertBefore(imgEl,ov); setupDrag(imgEl); }
+        imgEl.src=base64; applyPos(); emoji.style.display='none';
+        p.imgData=base64; p.imgPosX=50; p.imgPosY=50; p.imgScale=100;
         bar.style.width='100%';
         setTimeout(()=>bar.style.width='0',600);
-        setStatus('ok','✓ Foto salva!');
-        setTimeout(()=>setStatus('ok','✓ Tudo salvo'),2000);
+        setStatus('ok','✓ Foto salva! Clique na imagem para ajustar.');
+        setTimeout(()=>imgDiv.classList.add('adjusting'),300);
       } catch(e){ setStatus('err','Erro: '+e.message); bar.style.width='0'; }
     });
   };
-  imgDiv.appendChild(fi); imgDiv.onclick=()=>fi.click();
+  imgDiv.appendChild(fi);
+  imgDiv.onclick=ev=>{ if(imgDiv.classList.contains('adjusting')) return; if(imgEl) imgDiv.classList.add('adjusting'); else fi.click(); };
+  imgDiv.ondblclick=ev=>{ ev.stopPropagation(); imgDiv.classList.remove('adjusting'); fi.click(); };
 
+  const bar = document.createElement('div'); bar.className='uploading-bar'; bar.id='bar-'+p.id;
   const body = document.createElement('div'); body.className='prod-body';
 
   function field(lbl, val, key, ph, type='input'){
