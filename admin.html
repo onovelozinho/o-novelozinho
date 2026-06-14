@@ -227,72 +227,131 @@ function compressImage(file, callback){
 function makeCard(p){
   const card = document.createElement('div'); card.className='prod-card'; card.dataset.id=p.id;
 
-  // Image
-  const imgDiv = document.createElement('div'); imgDiv.className='prod-img';
-  const emoji = document.createElement('span'); emoji.textContent='🧶'; imgDiv.appendChild(emoji);
+  // Normalize images array (migrate legacy single image field)
+  if(!p.images || !Array.isArray(p.images)){
+    p.images = p.imgData ? [{src:p.imgData, posX:p.imgPosX||50, posY:p.imgPosY||50, scale:p.imgScale||100}] : [];
+  }
 
-  // Adjust bar
+  let curIdx = 0;
+
+  // Main image preview
+  const imgDiv = document.createElement('div'); imgDiv.className='prod-img';
+  const emoji = document.createElement('span'); emoji.textContent='🧶';
+
   const adjBar = document.createElement('div'); adjBar.className='adjust-bar';
   const adjLabel = document.createElement('span'); adjLabel.textContent='🔍 Zoom';
-  const adjRange = document.createElement('input'); adjRange.type='range'; adjRange.min=100; adjRange.max=250; adjRange.value=p.imgScale||100; adjRange.step=5;
+  const adjRange = document.createElement('input'); adjRange.type='range'; adjRange.min=100; adjRange.max=250; adjRange.step=5;
   const adjDone = document.createElement('button'); adjDone.textContent='✓ Concluir';
   adjBar.appendChild(adjLabel); adjBar.appendChild(adjRange); adjBar.appendChild(adjDone);
-  imgDiv.appendChild(adjBar);
-
-  let imgEl = null;
-  let posX = p.imgPosX||50, posY = p.imgPosY||50, scale = p.imgScale||100;
-
-  function applyPos(){ if(!imgEl) return; imgEl.style.objectPosition=posX+'% '+posY+'%'; imgEl.style.width=scale+'%'; imgEl.style.height=scale+'%'; imgEl.style.top=((100-scale)/2)+'%'; imgEl.style.left=((100-scale)/2)+'%'; }
-
-  function setupDrag(img){
-    let dragging=false,sx,sy,spx,spy;
-    img.addEventListener('mousedown',ev=>{ if(!imgDiv.classList.contains('adjusting')) return; dragging=true; img.classList.add('dragging'); sx=ev.clientX; sy=ev.clientY; spx=posX; spy=posY; ev.preventDefault(); });
-    window.addEventListener('mousemove',ev=>{ if(!dragging) return; const rect=imgDiv.getBoundingClientRect(); const dx=((ev.clientX-sx)/rect.width)*100*(100/scale); const dy=((ev.clientY-sy)/rect.height)*100*(100/scale); posX=Math.min(100,Math.max(0,spx-dx)); posY=Math.min(100,Math.max(0,spy-dy)); applyPos(); });
-    window.addEventListener('mouseup',()=>{ if(dragging){dragging=false; imgEl&&imgEl.classList.remove('dragging');} });
-    img.addEventListener('touchstart',ev=>{ if(!imgDiv.classList.contains('adjusting')) return; const t=ev.touches[0]; dragging=true; sx=t.clientX; sy=t.clientY; spx=posX; spy=posY; ev.preventDefault(); },{passive:false});
-    img.addEventListener('touchmove',ev=>{ if(!dragging) return; const t=ev.touches[0]; const rect=imgDiv.getBoundingClientRect(); const dx=((t.clientX-sx)/rect.width)*100*(100/scale); const dy=((t.clientY-sy)/rect.height)*100*(100/scale); posX=Math.min(100,Math.max(0,spx-dx)); posY=Math.min(100,Math.max(0,spy-dy)); applyPos(); ev.preventDefault(); },{passive:false});
-    img.addEventListener('touchend',()=>{dragging=false;});
-  }
-
-  adjDone.onclick=ev=>{ ev.stopPropagation(); imgDiv.classList.remove('adjusting'); savePosition(); };
-  adjRange.oninput=()=>{ scale=parseInt(adjRange.value); applyPos(); };
-
-  async function savePosition(){
-    if(!p.id) return;
-    try { await updateDoc(doc(db,'products',p.id),{imgPosX:posX,imgPosY:posY,imgScale:scale}); p.imgPosX=posX; p.imgPosY=posY; p.imgScale=scale; setStatus('ok','✓ Posição salva!'); setTimeout(()=>setStatus('ok','✓ Tudo salvo'),2000); } catch(e){}
-  }
-
-  if(p.imgData){
-    imgEl=document.createElement('img'); imgEl.src=p.imgData; imgEl.alt='foto';
-    imgDiv.appendChild(imgEl); applyPos(); setupDrag(imgEl); emoji.style.display='none';
-  }
 
   const ov = document.createElement('div'); ov.className='prod-img-overlay';
-  ov.innerHTML='📷 Clique para foto<br><small style="font-weight:400;opacity:.8">após adicionar, clique para ajustar</small>';
-  imgDiv.appendChild(ov);
 
-  const fi = document.createElement('input'); fi.type='file'; fi.accept='image/*'; fi.style.display='none';
+  let imgEl = null;
+
+  function applyPos(){
+    if(!imgEl || !p.images[curIdx]) return;
+    const im = p.images[curIdx];
+    imgEl.style.objectPosition=(im.posX||50)+'% '+(im.posY||50)+'%';
+    imgEl.style.width=(im.scale||100)+'%'; imgEl.style.height=(im.scale||100)+'%';
+    imgEl.style.top=((100-(im.scale||100))/2)+'%'; imgEl.style.left=((100-(im.scale||100))/2)+'%';
+  }
+
+  function setupDrag(img){
+    let dragging=false,sx,sy,spx,spy,sscale;
+    img.addEventListener('mousedown',ev=>{ if(!imgDiv.classList.contains('adjusting')) return; const im=p.images[curIdx]; dragging=true; img.classList.add('dragging'); sx=ev.clientX; sy=ev.clientY; spx=im.posX||50; spy=im.posY||50; sscale=im.scale||100; ev.preventDefault(); });
+    window.addEventListener('mousemove',ev=>{ if(!dragging) return; const im=p.images[curIdx]; const rect=imgDiv.getBoundingClientRect(); const dx=((ev.clientX-sx)/rect.width)*100*(100/sscale); const dy=((ev.clientY-sy)/rect.height)*100*(100/sscale); im.posX=Math.min(100,Math.max(0,spx-dx)); im.posY=Math.min(100,Math.max(0,spy-dy)); applyPos(); });
+    window.addEventListener('mouseup',()=>{ if(dragging){dragging=false; img.classList.remove('dragging'); saveImages();} });
+    img.addEventListener('touchstart',ev=>{ if(!imgDiv.classList.contains('adjusting')) return; const im=p.images[curIdx]; const t=ev.touches[0]; dragging=true; sx=t.clientX; sy=t.clientY; spx=im.posX||50; spy=im.posY||50; sscale=im.scale||100; ev.preventDefault(); },{passive:false});
+    img.addEventListener('touchmove',ev=>{ if(!dragging) return; const im=p.images[curIdx]; const t=ev.touches[0]; const rect=imgDiv.getBoundingClientRect(); const dx=((t.clientX-sx)/rect.width)*100*(100/sscale); const dy=((t.clientY-sy)/rect.height)*100*(100/sscale); im.posX=Math.min(100,Math.max(0,spx-dx)); im.posY=Math.min(100,Math.max(0,spy-dy)); applyPos(); ev.preventDefault(); },{passive:false});
+    img.addEventListener('touchend',()=>{ if(dragging){dragging=false; saveImages();} });
+  }
+
+  adjDone.onclick=ev=>{ ev.stopPropagation(); imgDiv.classList.remove('adjusting'); saveImages(); };
+  adjRange.oninput=()=>{ if(p.images[curIdx]){ p.images[curIdx].scale=parseInt(adjRange.value); applyPos(); } };
+
+  async function saveImages(){
+    if(!p.id) return;
+    try {
+      await updateDoc(doc(db,'products',p.id),{images:p.images, imgData:'', imgPosX:0,imgPosY:0,imgScale:100});
+      setStatus('ok','✓ Salvo!'); setTimeout(()=>setStatus('ok','✓ Tudo salvo'),1500);
+    } catch(e){ setStatus('err','Erro: '+e.message); }
+  }
+
+  function renderMainImg(){
+    imgDiv.innerHTML='';
+    if(p.images.length===0){
+      imgDiv.appendChild(emoji); emoji.style.display='';
+      imgDiv.appendChild(ov);
+      imgEl=null;
+      return;
+    }
+    const im = p.images[curIdx];
+    imgEl=document.createElement('img'); imgEl.src=im.src; imgEl.alt='foto';
+    imgDiv.appendChild(imgEl);
+    adjRange.value = im.scale||100;
+    applyPos(); setupDrag(imgEl);
+    imgDiv.appendChild(adjBar);
+    imgDiv.appendChild(ov);
+  }
+
+  ov.innerHTML='📷 Adicionar foto<br><small style="font-weight:400;opacity:.8">clique na miniatura para ajustar</small>';
+
+  const fi = document.createElement('input'); fi.type='file'; fi.accept='image/*'; fi.multiple=true; fi.style.display='none';
   fi.onchange=ev=>{
-    const f=ev.target.files[0]; if(!f) return;
-    bar.style.width='40%';
-    compressImage(f, async base64=>{
-      bar.style.width='80%';
-      try {
-        posX=50; posY=50; scale=100; adjRange.value=100;
-        await updateDoc(doc(db,'products',p.id),{imgData:base64, imgPosX:50, imgPosY:50, imgScale:100});
-        if(!imgEl){ imgEl=document.createElement('img'); imgEl.alt='foto'; imgDiv.insertBefore(imgEl,ov); setupDrag(imgEl); }
-        imgEl.src=base64; applyPos(); emoji.style.display='none';
-        p.imgData=base64; p.imgPosX=50; p.imgPosY=50; p.imgScale=100;
-        bar.style.width='100%';
-        setTimeout(()=>bar.style.width='0',600);
-        setStatus('ok','✓ Foto salva! Clique na imagem para ajustar.');
-        setTimeout(()=>imgDiv.classList.add('adjusting'),300);
-      } catch(e){ setStatus('err','Erro: '+e.message); bar.style.width='0'; }
+    const files = Array.from(ev.target.files); if(!files.length) return;
+    bar.style.width='30%';
+    let done=0;
+    files.forEach(f=>{
+      compressImage(f, async base64=>{
+        p.images.push({src:base64, posX:50, posY:50, scale:100});
+        done++;
+        bar.style.width=(30+done/files.length*60)+'%';
+        if(done===files.length){
+          curIdx = p.images.length-1;
+          renderMainImg(); renderThumbs();
+          await saveImages();
+          bar.style.width='100%';
+          setTimeout(()=>bar.style.width='0',500);
+        }
+      });
     });
   };
   imgDiv.appendChild(fi);
-  imgDiv.onclick=ev=>{ if(imgDiv.classList.contains('adjusting')) return; if(imgEl) imgDiv.classList.add('adjusting'); else fi.click(); };
-  imgDiv.ondblclick=ev=>{ ev.stopPropagation(); imgDiv.classList.remove('adjusting'); fi.click(); };
+  imgDiv.onclick=ev=>{
+    if(imgDiv.classList.contains('adjusting')) return;
+    if(p.images.length>0) imgDiv.classList.add('adjusting');
+    else fi.click();
+  };
+
+  renderMainImg();
+
+  // Thumbnail strip
+  const thumbStrip = document.createElement('div');
+  thumbStrip.style.cssText='display:flex;gap:4px;padding:6px;flex-wrap:wrap;background:#fdf6f1;';
+
+  function renderThumbs(){
+    thumbStrip.innerHTML='';
+    p.images.forEach((im,i)=>{
+      const wrap = document.createElement('div');
+      wrap.style.cssText='position:relative;width:42px;height:42px;border-radius:6px;overflow:hidden;cursor:pointer;border:2px solid '+(i===curIdx?'var(--accent2)':'transparent');
+      const t = document.createElement('img'); t.src=im.src; t.style.cssText='width:100%;height:100%;object-fit:cover;';
+      wrap.appendChild(t);
+      wrap.onclick=()=>{ curIdx=i; renderMainImg(); renderThumbs(); };
+      const del = document.createElement('div');
+      del.textContent='✕';
+      del.style.cssText='position:absolute;top:0;right:0;background:rgba(0,0,0,.6);color:#fff;font-size:9px;width:14px;height:14px;display:flex;align-items:center;justify-content:center;border-radius:0 0 0 4px;';
+      del.onclick=async ev=>{ ev.stopPropagation(); p.images.splice(i,1); if(curIdx>=p.images.length) curIdx=Math.max(0,p.images.length-1); renderMainImg(); renderThumbs(); await saveImages(); };
+      wrap.appendChild(del);
+      thumbStrip.appendChild(wrap);
+    });
+    // add button
+    const addT = document.createElement('div');
+    addT.textContent='＋';
+    addT.style.cssText='width:42px;height:42px;border-radius:6px;border:1.5px dashed var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;color:#b08060;font-size:18px;';
+    addT.onclick=()=>fi.click();
+    thumbStrip.appendChild(addT);
+  }
+  renderThumbs();
 
   const bar = document.createElement('div'); bar.className='uploading-bar'; bar.id='bar-'+p.id;
   const body = document.createElement('div'); body.className='prod-body';
@@ -303,7 +362,7 @@ function makeCard(p){
     if(type==='textarea'){ el=document.createElement('textarea'); el.rows=2; }
     else if(type==='select'){
       el=document.createElement('select');
-      [['sim','Disponível'],['enc','Sob encomenda'],['nao','Esgotado']].forEach(([v,lb])=>{
+      [['sim','Disponível'],['enc','Sob encomenda']].forEach(([v,lb])=>{
         const o=document.createElement('option'); o.value=v; o.textContent=lb;
         if(v===(val||'sim')) o.selected=true; el.appendChild(o);
       });
@@ -345,7 +404,7 @@ function makeCard(p){
   actions.appendChild(saveBtn); actions.appendChild(delBtn);
   body.appendChild(actions);
 
-  card.appendChild(imgDiv); card.appendChild(bar); card.appendChild(body);
+  card.appendChild(imgDiv); card.appendChild(bar); card.appendChild(thumbStrip); card.appendChild(body);
   return card;
 }
 
@@ -356,7 +415,7 @@ async function saveProduct(p){
       name:p.name||'', preco:p.preco||'', tamanho:p.tamanho||'',
       peso:p.peso||'', fio:p.fio||'', badge:p.badge||'',
       avail:p.avail||'sim', desc:p.desc||'',
-      order:p.order||0, imgData:p.imgData||''
+      order:p.order||0, images:p.images||[]
     },{merge:true});
     setStatus('ok','✓ Salvo!');
     setTimeout(()=>setStatus('ok','✓ Tudo salvo'),2000);
@@ -369,10 +428,10 @@ window.addProduct = async function(){
     const order = products.length;
     const ref2 = await addDoc(collection(db,'products'),{
       name:'Novo amigurumi', preco:'R$ --,--', tamanho:'-- cm',
-      peso:'--g', fio:'--', badge:'', avail:'sim', desc:'', order, imgData:''
+      peso:'--g', fio:'--', badge:'', avail:'sim', desc:'', order, images:[]
     });
     const p = {id:ref2.id, name:'Novo amigurumi', preco:'R$ --,--',
-      tamanho:'-- cm', peso:'--g', fio:'--', badge:'', avail:'sim', desc:'', order, imgData:''};
+      tamanho:'-- cm', peso:'--g', fio:'--', badge:'', avail:'sim', desc:'', order, images:[]};
     products.push(p);
     const grid = document.getElementById('prod-grid');
     const addBtn = grid.querySelector('.add-card');
