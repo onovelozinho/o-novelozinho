@@ -69,9 +69,32 @@ body{font-family:'Nunito',sans-serif;background:#f7efe8;color:#3a1f0a;}
 .wa-btn{position:fixed;bottom:1.5rem;right:1.5rem;background:#25d366;color:#fff;border:none;border-radius:50%;width:56px;height:56px;font-size:28px;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,.2);display:flex;align-items:center;justify-content:center;text-decoration:none;transition:transform .2s;}
 .wa-btn:hover{transform:scale(1.1);}
 
+/* CAROUSEL */
+.card-img{cursor:pointer;}
+.carousel-dots{position:absolute;bottom:8px;left:0;right:0;display:flex;justify-content:center;gap:5px;z-index:5;}
+.carousel-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.5);transition:background .2s;}
+.carousel-dot.active{background:#fff;}
+.carousel-arrow{position:absolute;top:50%;transform:translateY(-50%);background:rgba(0,0,0,.35);color:#fff;border:none;width:26px;height:26px;border-radius:50%;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:5;opacity:0;transition:opacity .2s;}
+.card-img:hover .carousel-arrow{opacity:1;}
+.carousel-arrow.prev{left:6px;}
+.carousel-arrow.next{right:6px;}
+
+/* LIGHTBOX */
+.lightbox-bg{display:none;position:fixed;inset:0;background:rgba(20,10,5,.85);z-index:1000;align-items:center;justify-content:center;}
+.lightbox-bg.open{display:flex;}
+.lightbox-img{max-width:90vw;max-height:85vh;border-radius:12px;object-fit:contain;}
+.lightbox-close{position:absolute;top:1.5rem;right:1.5rem;background:rgba(255,255,255,.15);color:#fff;border:none;width:40px;height:40px;border-radius:50%;font-size:20px;cursor:pointer;}
+.lightbox-arrow{position:absolute;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.15);color:#fff;border:none;width:46px;height:46px;border-radius:50%;font-size:22px;cursor:pointer;}
+.lightbox-arrow.prev{left:1.5rem;}
+.lightbox-arrow.next{right:1.5rem;}
+.lightbox-dots{position:absolute;bottom:1.5rem;left:0;right:0;display:flex;justify-content:center;gap:8px;}
+.lightbox-dot{width:9px;height:9px;border-radius:50%;background:rgba(255,255,255,.4);cursor:pointer;}
+.lightbox-dot.active{background:#fff;}
+
 @media(max-width:600px){
   .cover h1{font-size:24px;}
   .grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));}
+  .lightbox-arrow{width:38px;height:38px;font-size:18px;}
 }
 </style>
 </head>
@@ -98,7 +121,6 @@ body{font-family:'Nunito',sans-serif;background:#f7efe8;color:#3a1f0a;}
     <button class="filter-btn active" onclick="filterCards('todos', this)">Todos</button>
     <button class="filter-btn" onclick="filterCards('sim', this)">Disponível</button>
     <button class="filter-btn" onclick="filterCards('enc', this)">Sob encomenda</button>
-    <button class="filter-btn" onclick="filterCards('nao', this)">Esgotado</button>
   </div>
 
   <div class="grid" id="grid">
@@ -113,6 +135,14 @@ body{font-family:'Nunito',sans-serif;background:#f7efe8;color:#3a1f0a;}
 </div>
 
 <a class="wa-btn" id="wa-btn" href="#" target="_blank" title="Fale conosco no WhatsApp">💬</a>
+
+<div class="lightbox-bg" id="lightbox">
+  <button class="lightbox-close" onclick="closeLightbox()">✕</button>
+  <button class="lightbox-arrow prev" onclick="lightboxNav(-1)">‹</button>
+  <img class="lightbox-img" id="lightbox-img" src="" alt="">
+  <button class="lightbox-arrow next" onclick="lightboxNav(1)">›</button>
+  <div class="lightbox-dots" id="lightbox-dots"></div>
+</div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
@@ -135,24 +165,58 @@ let allProducts = [];
 function availClass(v){return v==='sim'?'a-sim':v==='nao'?'a-nao':'a-enc';}
 function availLabel(v){return v==='sim'?'Disponível':v==='nao'?'Esgotado':'Sob encomenda';}
 
+function getImages(p){
+  // Support new multi-image format (p.images array) and legacy single image
+  if(p.images && Array.isArray(p.images) && p.images.length>0) return p.images;
+  if(p.imgData||p.imgUrl) return [{src:p.imgData||p.imgUrl, posX:p.imgPosX||50, posY:p.imgPosY||50, scale:p.imgScale||100}];
+  return [];
+}
+
 function makeCard(p){
   const card = document.createElement('div');
   card.className = 'card';
   card.dataset.avail = p.avail || 'sim';
 
+  const images = getImages(p);
+  let curIdx = 0;
+
   const imgDiv = document.createElement('div');
   imgDiv.className = 'card-img';
-  if(p.imgData||p.imgUrl){
+
+  function renderImg(){
+    imgDiv.innerHTML='';
+    if(images.length===0){
+      imgDiv.textContent = '🧶';
+      return;
+    }
+    const im = images[curIdx];
     const img = document.createElement('img');
-    img.src = p.imgData||p.imgUrl; img.alt = p.name||'';
-    const px = p.imgPosX||50, py = p.imgPosY||50, sc = p.imgScale||100;
-    img.style.objectPosition = px+'% '+py+'%';
-    img.style.transform = `scale(${sc/100})`;
-    img.style.transformOrigin = px+'% '+py+'%';
+    img.src = im.src; img.alt = p.name||'';
+    img.style.objectPosition = (im.posX||50)+'% '+(im.posY||50)+'%';
+    img.style.transform = `scale(${(im.scale||100)/100})`;
+    img.style.transformOrigin = (im.posX||50)+'% '+(im.posY||50)+'%';
     imgDiv.appendChild(img);
-  } else {
-    imgDiv.textContent = '🧶';
+
+    if(images.length>1){
+      const prevBtn = document.createElement('button');
+      prevBtn.className='carousel-arrow prev'; prevBtn.textContent='‹';
+      prevBtn.onclick=ev=>{ ev.stopPropagation(); curIdx=(curIdx-1+images.length)%images.length; renderImg(); };
+      const nextBtn = document.createElement('button');
+      nextBtn.className='carousel-arrow next'; nextBtn.textContent='›';
+      nextBtn.onclick=ev=>{ ev.stopPropagation(); curIdx=(curIdx+1)%images.length; renderImg(); };
+      imgDiv.appendChild(prevBtn); imgDiv.appendChild(nextBtn);
+
+      const dots = document.createElement('div'); dots.className='carousel-dots';
+      images.forEach((_,i)=>{
+        const d=document.createElement('div'); d.className='carousel-dot'+(i===curIdx?' active':'');
+        dots.appendChild(d);
+      });
+      imgDiv.appendChild(dots);
+    }
   }
+  renderImg();
+
+  imgDiv.onclick = ()=>{ if(images.length>0) openLightbox(images, curIdx, p.name||''); };
 
   if(p.badge){
     const badge = document.createElement('div');
@@ -191,6 +255,48 @@ window.filterCards = function(avail, btn){
     c.style.display = (avail==='todos' || c.dataset.avail===avail) ? '' : 'none';
   });
 };
+
+// ── LIGHTBOX ──
+let lbImages = [];
+let lbIdx = 0;
+
+window.openLightbox = function(images, idx, name){
+  lbImages = images; lbIdx = idx;
+  renderLightbox(name);
+  document.getElementById('lightbox').classList.add('open');
+};
+window.closeLightbox = function(){
+  document.getElementById('lightbox').classList.remove('open');
+};
+window.lightboxNav = function(dir){
+  lbIdx = (lbIdx + dir + lbImages.length) % lbImages.length;
+  renderLightbox();
+};
+function renderLightbox(name){
+  const img = document.getElementById('lightbox-img');
+  img.src = lbImages[lbIdx].src;
+  img.alt = name||'';
+  img.style.objectFit = 'contain';
+  const dotsEl = document.getElementById('lightbox-dots');
+  dotsEl.innerHTML='';
+  if(lbImages.length>1){
+    lbImages.forEach((_,i)=>{
+      const d=document.createElement('div'); d.className='lightbox-dot'+(i===lbIdx?' active':'');
+      d.onclick=()=>{ lbIdx=i; renderLightbox(name); };
+      dotsEl.appendChild(d);
+    });
+  }
+  document.querySelectorAll('.lightbox-arrow').forEach(a=>a.style.display = lbImages.length>1?'flex':'none');
+}
+document.getElementById('lightbox').addEventListener('click', e=>{
+  if(e.target.id==='lightbox') closeLightbox();
+});
+document.addEventListener('keydown', e=>{
+  if(!document.getElementById('lightbox').classList.contains('open')) return;
+  if(e.key==='Escape') closeLightbox();
+  if(e.key==='ArrowLeft') lightboxNav(-1);
+  if(e.key==='ArrowRight') lightboxNav(1);
+});
 
 async function loadData(){
   try {
